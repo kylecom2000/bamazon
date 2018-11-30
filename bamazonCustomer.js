@@ -15,7 +15,7 @@ const connection = mysql.createConnection({
 //
 const divider =`------------------------------------------------------------`;
 let idNumber = 0;
-let purchaseQuant = 0;
+let purchaseQuan = 0;
 
 // 
 connection.connect(function(err) {
@@ -32,7 +32,7 @@ ${divider}}`);
 });
 
 // 
-function mainPrompt(greeting) {
+function mainPrompt() {
     inquirer.prompt([
       {
         type: "list",
@@ -56,10 +56,10 @@ function mainPrompt(greeting) {
             mainPrompt();
         }
     });
-  }
+}
 
 // 
-function listStoreItems () {
+function listStoreItems() {
     console.clear();
     connection.query("SELECT * FROM products;", function(err, res){
         if(err) throw err;
@@ -86,82 +86,123 @@ function forSale (){
             console.log(productList);
         }
         console.log(divider);
-        whatID();
+        whatID(res);
     });
 }
 
 // 
-function whatID (){
+function whatID(itemsArray){
     inquirer.prompt([
         {type: "input",
         name: "purchaseID",
-        message: "Which item ID#?"}]).then(function(res) {
-                // console.log(res.purchaseID);
-                idNumber = res.purchaseID;
-                howManyUnits();
-            })
+        message: "Which item ID#?"}
+        ]).then(function(res) {
+            idNumber = res.purchaseID;
+            if (idNumber > itemsArray.length){
+                console.log("Sorry, that ID number doesn't exist.")
+                whatID(itemsArray);
+            }
+            if (itemsArray[(idNumber - 1)].stock_quantity === 0){
+                console.log("We are out of stock");
+                whatID(itemsArray);
+            }
+            // IF ID's stock_quantity is zero, then restart function?
+            else{
+                howManyUnits(itemsArray);
+            }
+        })
 }
 
 // 
-function howManyUnits () {
+function howManyUnits(itemsArray) {
     inquirer.prompt([
-        {
-
-        type: "input",
-        name: "purchaseQuant",
-        message: "How many?"
-
-        }]).then(function(res) {
-                // console.log(idNumber);
-                purchaseQuant = res.purchaseQuant;
-                purchaseMade();
-            })
-
-    // then function with idNumber and howManyUnits to deduct from database
+        {type: "input",
+        name: "purchaseQuan",
+        message: "How many?"}
+        ]).then(function(res) {
+            if (res.purchaseQuan > 0){
+                purchaseQuan = res.purchaseQuan;
+                purchase();
+                
+            } else {
+                whatID(itemsArray);
+            }
+        })
 }
 
 // 
-function purchaseMade() {
+function purchase() {
     console.log("ONE")
     connection.query(`SELECT * FROM products WHERE item_id = ${idNumber};`, function(err, res){
         console.log("TWO")
         if(err) throw err;
-        console.log("THREE");
-        let theseResults = JSON.stringify(res)
-        console.log(theseResults);
-        console.log(theseResults);
-        
-        console.log(purchaseQuant);
-        // console.log(res.stock_quantity);
-        // console.log(res.products.stock_quantity);
-        if(purchaseQuant <= res.stock_quantity){
-            console.log("FOUR");
-            connection.query("UPDATE products SET ? WHERE ?", 
-            {
-                stock_quantity: 100
-            },{
-                item_id: idNumber
-            },
-            function(err, res) {
-                console.log(chalk`{red You have purchased ${purchaseQuant} ${res.product_name}`);
-            });
+        console.log(purchaseQuan);
+        if (purchaseQuan > res[0].stock_quantity){
+            console.log("We don't have that many.");
+            howManyUnits();
         }
-        // if (purchaseQuant > res.stock_quantity){
+        if(purchaseQuan <= res[0].stock_quantity){
+            goodPurchase(res[0].stock_quantity);
+        }
+
+
+        // if (purchaseQuan > res[0].stock_quantity){
         //     console.log("FIVE")
         //     console.log("We don't have that many, please stop being so greedy.");
         //     howManyUnits();
         // } 
         
-    })
-    // TO DO If purchase quantity is >= stock_quantity then do purchase
-    // if else (purchase quan is <= 0, NO PURCHASE) {run }
-    
-    // subtract 
-    // connection.query WHERE id IS idNumber
-    // subtract from quantity, 
-    
-    // TO DO don't run main prompt, but go back to whatID();
+    }) // ----------END OF CONNECTION----------
+   
 }
+function goodPurchase (stockNumber) {
+    // console.log("goodPurchase");
+    // console.log("IDNUMBER:" + idNumber);
+    connection.query("UPDATE products SET ? WHERE ?;", 
+        [
+            {
+                stock_quantity: (stockNumber - purchaseQuan)
+            },
+            {
+                item_id: idNumber
+            }
+        ],
+        function(err, res) {
+            console.log("Response after UPDATE:"+res.affectedRows);
+            
+            // console.log(chalk`{red You have purchased ${purchaseQuan} ${res[0].product_name}`);
+        }
+    );
+}
+
+
+function purchaseMore(){ 
+        inquirer.prompt([
+          {
+            type: "list",
+            name: "UserChoicePrompt",
+            message: `What would you like to do?`,
+            choices: ["Purchase Items?","List Items?","Exit"]
+          }
+      
+        ]).then(function(user) {
+            const userC = user.UserChoicePrompt;
+            if (userC === "Purchase Items?") {
+                forSale();
+            }
+            else if (userC === "List Items?") {
+                listStoreItems();
+            }
+            else if (userC === "Exit") {
+                exitStore();
+            }
+            else {
+                mainPrompt();
+            }
+        });
+    
+}
+
 
 // 
 function exitStore() {
