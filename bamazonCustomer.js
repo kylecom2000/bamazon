@@ -1,9 +1,9 @@
-//
+// node-modules used.
 const mysql = require("mysql");
 const inquirer = require("inquirer");
 const chalk = require("chalk");
 
-//
+// connection information to My Sql server
 const connection = mysql.createConnection({
     host: "localhost",
     port: 8889,
@@ -19,7 +19,7 @@ let idNumber;
 let purchaseQuan = 0;
 
 
-// 
+// establish connection
 connection.connect(function(err) {
     if (err) throw err;
     console.log(`Connected as id ${connection.threadId} \n`);
@@ -36,7 +36,7 @@ ${divider}}`);
 
 
 
-// 
+// Function called after connection established, choices established.
 function mainPrompt() {
     inquirer.prompt([
       {
@@ -62,7 +62,7 @@ function mainPrompt() {
     });
 }
 
-// 
+// query to database, results displayed.
 function listStoreItems() {
     console.clear();
     connection.query("SELECT * FROM products;", function(err, res){
@@ -78,7 +78,7 @@ function listStoreItems() {
     });
 }
 
-// 
+// query database, resultts displayed.
 function forSale (){
     console.clear();
     connection.query("SELECT * FROM products;", function(err, res){
@@ -94,7 +94,7 @@ function forSale (){
     });
 }
 
-// 
+// asks for ID of items list.
 function whatID(itemsArray){
     inquirer.prompt([
         {type: "input",
@@ -124,7 +124,7 @@ function whatID(itemsArray){
             });
 }
 
-// 
+// how many units to purchase
 function howManyUnits(itemsArray) {
     inquirer.prompt([
         {type: "input",
@@ -141,7 +141,7 @@ function howManyUnits(itemsArray) {
         })
 }
 
-// 
+// when a purchase is made, check stock quantity or move on.
 function purchase(itemsArray) {
         if (purchaseQuan > itemsArray[idNumber-1].stock_quantity){
             console.log("Currently, We don't have that many.");
@@ -153,7 +153,7 @@ function purchase(itemsArray) {
 
 }
 
-//
+// When everything checks out. change database
 function goodPurchase (itemsArray) {
     let stockNumber = itemsArray[idNumber-1].stock_quantity;
     connection.query("UPDATE products SET ? WHERE ?;", 
@@ -172,7 +172,7 @@ function goodPurchase (itemsArray) {
     );
 }
 
-// 
+// Disconnect from server.
 function exitStore() {
     console.log(chalk`{red Thanks for shopping with BAMAZON!!}`)
     connection.end();
