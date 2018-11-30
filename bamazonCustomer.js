@@ -12,11 +12,12 @@ const connection = mysql.createConnection({
     database: "bamazon"
 });
 
-//
+// Global varaiables, visual, user's choices, 
 const divider =`------------------------------------------------------------`;
+let productList;
 let idNumber;
 let purchaseQuan = 0;
-let productList;
+
 
 // 
 connection.connect(function(err) {
@@ -26,11 +27,22 @@ connection.connect(function(err) {
     console.log(chalk`
 {red ${divider}
 ${divider}}
-                    Welcome to Bamazon!
+                    Welcome to BAMAZON!
 {blue ${divider}
 ${divider}}`);
+
     mainPrompt();
 });
+
+// function getProductList (){}
+// connection.query("SELECT * FROM products;", function(err, res){
+//     if(err) throw err;
+//     for(var i =0; i < res.length; i++){
+//         productList =
+//         `ID:${res[i].item_id}--${res[i].product_name} - $${res[i].price} - ${res[i].department_name} - ${res[i].stock_quantity}`;
+//         console.log(productList);
+//     }
+// }
 
 // 
 function mainPrompt() {
@@ -162,14 +174,14 @@ function goodPurchase (itemsArray) {
             }
         ],
         function(err, res) {
-            console.log(chalk`{red You have purchased ${purchaseQuan} ${itemsArray[idNumber-1].product_name}!!!}`);
             listStoreItems();
+            console.log(chalk`{red You have purchased ${purchaseQuan} ${itemsArray[idNumber-1].product_name}!!!}`);
         }
     );
 }
 
 // 
 function exitStore() {
-    console.log("Thanks for shopping!")
+    console.log(chalk`{red Thanks for shopping with BAMAZON!!}`)
     connection.end();
 }
