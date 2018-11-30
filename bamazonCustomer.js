@@ -14,13 +14,14 @@ const connection = mysql.createConnection({
 
 //
 const divider =`------------------------------------------------------------`;
-let idNumber = 0;
+let idNumber;
 let purchaseQuan = 0;
+let productList;
 
 // 
 connection.connect(function(err) {
     if (err) throw err;
-    // console.log(`Connected as id ${connection.threadId} \n`);
+    console.log(`Connected as id ${connection.threadId} \n`);
     console.clear();
     console.log(chalk`
 {red ${divider}
@@ -40,7 +41,6 @@ function mainPrompt() {
         message: `What would you like to do?`,
         choices: ["Purchase Items?","List Items?","Exit"]
       }
-  
     ]).then(function(user) {
         const userC = user.UserChoicePrompt;
         if (userC === "Purchase Items?") {
@@ -65,7 +65,7 @@ function listStoreItems() {
         if(err) throw err;
         console.log(divider);
         for(var i =0; i < res.length; i++){
-            let productList =
+            productList =
             `ID:${res[i].item_id}--${res[i].product_name} - $${res[i].price} - ${res[i].department_name} - ${res[i].stock_quantity}`;
             console.log(productList);
         }
@@ -81,7 +81,7 @@ function forSale (){
         if(err) throw err;
         console.log(divider);
         for(var i =0; i < res.length; i++){
-            let productList =
+            productList =
             `ID:${res[i].item_id}--${res[i].product_name} - $${res[i].price} - ${res[i].department_name} - ${res[i].stock_quantity}`;
             console.log(productList);
         }
@@ -95,22 +95,29 @@ function whatID(itemsArray){
     inquirer.prompt([
         {type: "input",
         name: "purchaseID",
-        message: "Which item ID#?"}
+        message: "Which ID#? (Enter)"}
         ]).then(function(res) {
             idNumber = res.purchaseID;
-            if (idNumber > itemsArray.length){
-                console.log("Sorry, that ID number doesn't exist.")
+            
+            if (idNumber > 0 && idNumber < itemsArray.length) {
+                if (itemsArray[(idNumber - 1)].stock_quantity === 0){
+                    console.log(`Sorry! We are out of ${itemsArray[idNumber - 1].product_name}`);
+                    whatID(itemsArray);
+                }
+                else {
+                    howManyUnits(itemsArray);
+                }
+            } 
+            else if (idNumber > itemsArray.length || idNumber < 0 || isNaN(idNumber)){
+                console.log("Sorry, that ID number doesn't exist.");
                 whatID(itemsArray);
             }
-            if (itemsArray[(idNumber - 1)].stock_quantity === 0){
-                console.log("We are out of stock");
-                whatID(itemsArray);
-            }
-            // IF ID's stock_quantity is zero, then restart function?
-            else{
-                howManyUnits(itemsArray);
-            }
-        })
+            else {
+                console.clear();
+                listStoreItems();
+                return;
+                }
+            });
 }
 
 // 
@@ -122,7 +129,7 @@ function howManyUnits(itemsArray) {
         ]).then(function(res) {
             if (res.purchaseQuan > 0){
                 purchaseQuan = res.purchaseQuan;
-                purchase();
+                purchase(itemsArray);
                 
             } else {
                 whatID(itemsArray);
@@ -131,33 +138,20 @@ function howManyUnits(itemsArray) {
 }
 
 // 
-function purchase() {
-    console.log("ONE")
-    connection.query(`SELECT * FROM products WHERE item_id = ${idNumber};`, function(err, res){
-        console.log("TWO")
-        if(err) throw err;
-        console.log(purchaseQuan);
-        if (purchaseQuan > res[0].stock_quantity){
-            console.log("We don't have that many.");
-            howManyUnits();
+function purchase(itemsArray) {
+        if (purchaseQuan > itemsArray[idNumber-1].stock_quantity){
+            console.log("Currently, We don't have that many.");
+            howManyUnits(itemsArray);
         }
-        if(purchaseQuan <= res[0].stock_quantity){
-            goodPurchase(res[0].stock_quantity);
+        if(purchaseQuan <= itemsArray[idNumber-1].stock_quantity){
+            goodPurchase(itemsArray);
         }
 
-
-        // if (purchaseQuan > res[0].stock_quantity){
-        //     console.log("FIVE")
-        //     console.log("We don't have that many, please stop being so greedy.");
-        //     howManyUnits();
-        // } 
-        
-    }) // ----------END OF CONNECTION----------
-   
 }
-function goodPurchase (stockNumber) {
-    // console.log("goodPurchase");
-    // console.log("IDNUMBER:" + idNumber);
+
+//
+function goodPurchase (itemsArray) {
+    let stockNumber = itemsArray[idNumber-1].stock_quantity;
     connection.query("UPDATE products SET ? WHERE ?;", 
         [
             {
@@ -168,49 +162,14 @@ function goodPurchase (stockNumber) {
             }
         ],
         function(err, res) {
-            console.log("Response after UPDATE:"+res.affectedRows);
-            
-            // console.log(chalk`{red You have purchased ${purchaseQuan} ${res[0].product_name}`);
+            console.log(chalk`{red You have purchased ${purchaseQuan} ${itemsArray[idNumber-1].product_name}!!!}`);
+            listStoreItems();
         }
     );
 }
-
-
-function purchaseMore(){ 
-        inquirer.prompt([
-          {
-            type: "list",
-            name: "UserChoicePrompt",
-            message: `What would you like to do?`,
-            choices: ["Purchase Items?","List Items?","Exit"]
-          }
-      
-        ]).then(function(user) {
-            const userC = user.UserChoicePrompt;
-            if (userC === "Purchase Items?") {
-                forSale();
-            }
-            else if (userC === "List Items?") {
-                listStoreItems();
-            }
-            else if (userC === "Exit") {
-                exitStore();
-            }
-            else {
-                mainPrompt();
-            }
-        });
-    
-}
-
 
 // 
 function exitStore() {
     console.log("Thanks for shopping!")
     connection.end();
 }
-
-
- // whatID will return the ID number of the selected then....
-// guery the info on the now GLOBAL "productsList" variable.
-// how many will determine 
