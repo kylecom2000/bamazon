@@ -1,10 +1,10 @@
-var mysql = require("mysql");
-var inquirer = require("inquirer");
+//
+const mysql = require("mysql");
+const inquirer = require("inquirer");
+const chalk = require("chalk");
 
-const divider =
-`\n------------------------------------------------------------`;
-
-var connection = mysql.createConnection({
+//
+const connection = mysql.createConnection({
     host: "localhost",
     port: 8889,
     user: "root",
@@ -12,69 +12,39 @@ var connection = mysql.createConnection({
     database: "bamazon"
 });
 
+//
+const divider =`------------------------------------------------------------`;
+let idNumber = 0;
+let purchaseQuant = 0;
+
+// 
 connection.connect(function(err) {
     if (err) throw err;
-    console.log(`onnected as id ${connection.threadId} \n`);
+    // console.log(`Connected as id ${connection.threadId} \n`);
+    console.clear();
+    console.log(chalk`
+{red ${divider}
+${divider}}
+                    Welcome to Bamazon!
+{blue ${divider}
+${divider}}`);
     mainPrompt();
 });
 
-function listStoreItems(){
-    connection.query("SELECT * FROM products;", function(err, res){
-        if(err) throw err;
-        console.log(divider);
-        for(var i =0; i < res.length; i++){
-            var productList =
-            `ID:${res[i].item_id}--${res[i].product_name} - $${res[i].price} - ${res[i].department_name} - ${res[i].stock_quantity}`;
-            console.log(productList);
-        }
-        console.log(divider);
-        whatID();
-        
-    });
-    return;
-}
-
-
-function exitStore() {
-    console.log("Thanks for shopping!")
-    connection.end();
-}
-
-function mainPrompt() {
+// 
+function mainPrompt(greeting) {
     inquirer.prompt([
-  
       {
         type: "list",
         name: "UserChoicePrompt",
-        message: "What would you like to do?",
+        message: `What would you like to do?`,
         choices: ["Purchase Items?","List Items?","Exit"]
       }
   
     ]).then(function(user) {
         const userC = user.UserChoicePrompt;
         if (userC === "Purchase Items?") {
-            listStoreItems(); 
-            //consider passing in another variable(type bool) into listStore Items that determines if we want input back or not, and only run whatID if that is true?-C (LEAVE THIS COMMENT)
-            // Alright. I have to read that many times.
-            // delete it when your are done!! =D
-            // thanks mang
-            // NOW he shows up. I still got work to do. But fixed one issue. Kind of. Just trying to ficgure out 
-            // how to not do things asynchronously
-            // 
-            // I had a doctors appt butthole....k
-            // async is very tight butthole // yeah. -kb
-            // so the listStoreItems function shouldn't be called both in this if statement and in the List Items statement, since one only displays stuff while the other 
-            // lets you select from them
-            // yeah. I wanted list items to be more universal. So I could call it and then afterwards, either go back to main menu, OR call the whatID function in 
-            // order to make purchases.
-            //  I'm kicking you out now. do it. kill me I can't figure out how though.
-
-            // fuck your couch, neighbor!
-            // 
-            // i get it, its better to consolidate functions or make them more versatile but its more work. props tho          
-            // YEAH that's true.  Thanks for taking a look.
-            // Alright. So I am just going to have two separate functions. of course.   yeah. Alright. Whatever. 
-            // I just wanted it to work like I wanted it to. Not the way javascript works.
+            forSale();
         }
         else if (userC === "List Items?") {
             listStoreItems();
@@ -88,18 +58,118 @@ function mainPrompt() {
     });
   }
 
+// 
+function listStoreItems () {
+    console.clear();
+    connection.query("SELECT * FROM products;", function(err, res){
+        if(err) throw err;
+        console.log(divider);
+        for(var i =0; i < res.length; i++){
+            let productList =
+            `ID:${res[i].item_id}--${res[i].product_name} - $${res[i].price} - ${res[i].department_name} - ${res[i].stock_quantity}`;
+            console.log(productList);
+        }
+        console.log(divider);
+        mainPrompt();
+    });
+}
+
+// 
+function forSale (){
+    console.clear();
+    connection.query("SELECT * FROM products;", function(err, res){
+        if(err) throw err;
+        console.log(divider);
+        for(var i =0; i < res.length; i++){
+            let productList =
+            `ID:${res[i].item_id}--${res[i].product_name} - $${res[i].price} - ${res[i].department_name} - ${res[i].stock_quantity}`;
+            console.log(productList);
+        }
+        console.log(divider);
+        whatID();
+    });
+}
+
+// 
 function whatID (){
     inquirer.prompt([
-        {
-        type: "input",
-        name: "purchastID",
-        message: "Item # ?"
-        }
-
-        ]).then(function(user) {
-            const userC = user.purchaseID;
-            console.log(userC);
-        }).then(function(user){
-
-        });
+        {type: "input",
+        name: "purchaseID",
+        message: "Which item ID#?"}]).then(function(res) {
+                // console.log(res.purchaseID);
+                idNumber = res.purchaseID;
+                howManyUnits();
+            })
 }
+
+// 
+function howManyUnits () {
+    inquirer.prompt([
+        {
+
+        type: "input",
+        name: "purchaseQuant",
+        message: "How many?"
+
+        }]).then(function(res) {
+                // console.log(idNumber);
+                purchaseQuant = res.purchaseQuant;
+                purchaseMade();
+            })
+
+    // then function with idNumber and howManyUnits to deduct from database
+}
+
+// 
+function purchaseMade() {
+    console.log("ONE")
+    connection.query(`SELECT * FROM products WHERE item_id = ${idNumber};`, function(err, res){
+        console.log("TWO")
+        if(err) throw err;
+        console.log("THREE");
+        let theseResults = JSON.stringify(res)
+        console.log(theseResults);
+        console.log(theseResults);
+        
+        console.log(purchaseQuant);
+        // console.log(res.stock_quantity);
+        // console.log(res.products.stock_quantity);
+        if(purchaseQuant <= res.stock_quantity){
+            console.log("FOUR");
+            connection.query("UPDATE products SET ? WHERE ?", 
+            {
+                stock_quantity: 100
+            },{
+                item_id: idNumber
+            },
+            function(err, res) {
+                console.log(chalk`{red You have purchased ${purchaseQuant} ${res.product_name}`);
+            });
+        }
+        // if (purchaseQuant > res.stock_quantity){
+        //     console.log("FIVE")
+        //     console.log("We don't have that many, please stop being so greedy.");
+        //     howManyUnits();
+        // } 
+        
+    })
+    // TO DO If purchase quantity is >= stock_quantity then do purchase
+    // if else (purchase quan is <= 0, NO PURCHASE) {run }
+    
+    // subtract 
+    // connection.query WHERE id IS idNumber
+    // subtract from quantity, 
+    
+    // TO DO don't run main prompt, but go back to whatID();
+}
+
+// 
+function exitStore() {
+    console.log("Thanks for shopping!")
+    connection.end();
+}
+
+
+ // whatID will return the ID number of the selected then....
+// guery the info on the now GLOBAL "productsList" variable.
+// how many will determine 
