@@ -34,15 +34,7 @@ ${divider}}`);
     mainPrompt();
 });
 
-// function getProductList (){}
-// connection.query("SELECT * FROM products;", function(err, res){
-//     if(err) throw err;
-//     for(var i =0; i < res.length; i++){
-//         productList =
-//         `ID:${res[i].item_id}--${res[i].product_name} - $${res[i].price} - ${res[i].department_name} - ${res[i].stock_quantity}`;
-//         console.log(productList);
-//     }
-// }
+
 
 // 
 function mainPrompt() {
@@ -111,7 +103,7 @@ function whatID(itemsArray){
         ]).then(function(res) {
             idNumber = res.purchaseID;
             
-            if (idNumber > 0 && idNumber < itemsArray.length) {
+            if (idNumber > 0 && idNumber <= itemsArray.length) {
                 if (itemsArray[(idNumber - 1)].stock_quantity === 0){
                     console.log(`Sorry! We are out of ${itemsArray[idNumber - 1].product_name}`);
                     whatID(itemsArray);
@@ -120,7 +112,7 @@ function whatID(itemsArray){
                     howManyUnits(itemsArray);
                 }
             } 
-            else if (idNumber > itemsArray.length || idNumber < 0 || isNaN(idNumber)){
+            else if (idNumber > itemsArray.length || idNumber <= 0 || isNaN(idNumber)){
                 console.log("Sorry, that ID number doesn't exist.");
                 whatID(itemsArray);
             }
